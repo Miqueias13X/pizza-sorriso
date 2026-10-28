@@ -1,0 +1,12 @@
+{
+  "name": "pizza-sorriso-servidor",
+  "version": "1.0.0",
+  "description": "Recebe pedidos do app Pizza Sorriso e envia para o Telegram do dono",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pizza Sorriso 🍕</title>
+<style>
+:root{--amarelo:#FFD60A;--amarelo-escuro:#FFC300;--creme:#fff8c7;--escuro:#3b2a00;--vermelho:#ff4d4d}
+*{box-sizing:border-box}
+body{margin:0;font-family:"Trebuchet MS",Verdana,sans-serif;background:var(--amarelo);color:var(--escuro);min-height:100vh}
+header{background:var(--escuro);color:var(--amarelo);padding:14px 18px;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+header h1{margin:0;font-size:22px}
+#carrinhoBtn{background:var(--vermelho);color:#fff;border:0;border-radius:999px;padding:8px 16px;font-weight:bold;cursor:pointer;font-size:15px}
+main{max-width:460px;margin:0 auto;padding:16px}
+.card{background:var(--creme);border-radius:24px;padding:16px;margin-bottom:16px;box-shadow:0 6px 0 var(--amarelo-escuro)}
+h2{margin:0 0 10px;font-size:18px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{border:3px solid var(--escuro);border-radius:999px;padding:12px 16px;min-height:48px;background:#fff;font-weight:bold;cursor:pointer;color:var(--escuro);font-family:inherit;font-size:15px;touch-action:manipulation}
+.chip.on{background:var(--escuro);color:var(--amarelo)}
+select{width:100%;padding:12px;border-radius:14px;border:3px solid var(--escuro);font-size:16px;font-weight:bold;background:#fff;font-family:inherit}
+#pizzaWrap{text-align:center}
+svg#pizza{width:min(84vw,330px);height:auto;cursor:pointer;transition:transform .25s;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.slice{cursor:pointer}
+.centro circle{stroke:#3b2a00}
+svg#pizza.pula{animation:pula .4s}
+@keyframes pula{0%{transform:scale(1)}40%{transform:scale(1.06) rotate(-2deg)}100%{transform:scale(1)}}
+.dica{font-size:14px;margin:8px 0 0}
+.preco{font-size:26px;font-weight:bold;text-align:center;margin-top:6px}
+.btn{width:100%;padding:16px;min-height:52px;border:0;border-radius:999px;background:var(--escuro);color:var(--amarelo);font-size:18px;font-weight:bold;cursor:pointer;box-shadow:0 5px 0 #000;font-family:inherit;touch-action:manipulation}
+@media (max-width:480px){main{padding:12px}.card{padding:14px;border-radius:20px}h2{font-size:17px}.preco{font-size:24px}}
+.btn:active{transform:translateY(3px);box-shadow:none}
+.btn-sec{background:#fff;color:var(--escuro);box-shadow:0 5px 0 var(--escuro);margin-top:10px}
+.item{display:flex;justify-content:space-between;padding:10px 0;border-bottom:2px dashed var(--escuro);gap:8px;font-size:15px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none;align-items:center;justify-content:center;padding:16px;z-index:10}
+.modal.aberto{display:flex}
+.box{background:var(--amarelo);border-radius:24px;padding:20px;max-width:420px;width:100%;max-height:85vh;overflow:auto}
+.fechar{float:right;background:none;border:0;font-size:24px;cursor:pointer;color:var(--escuro)}
+.total{font-size:20px;font-weight:bold;margin-top:12px;text-align:right}
+.vazio{text-align:center;padding:12px;font-size:15px}
+.campo{width:100%;padding:12px;border-radius:14px;border:3px solid var(--escuro);font-size:16px;font-family:inherit;margin-bottom:12px;background:#fff;color:var(--escuro)}
+.label{font-weight:bold;font-size:14px;display:block;margin:0 0 4px}
+.linha{display:flex;gap:10px}
+.linha>div{flex:1}
+</style>
+</head>
+<body>
+<header>
+  <h1>🍕 Pizza Sorriso</h1>
+  <button id="carrinhoBtn" onclick="abrirCarrinho()">🛒 <span id="qtd">0</span></button>
+</header>
+
+<main>
+  <div class="card">
+    <h2>1. Escolha o tamanho</h2>
+    <select id="tamanho" onchange="mudarTamanho()"></select>
+  </div>
+
+  <div class="card">
+    <h2>2. Escolha o sabor e clique na pizza!</h2>
+    <div class="chips" id="sabores"></div>
+    <p class="dica">Selecione um sabor e toque numa fatia para pintar. Até 2 sabores por pizza 😋</p>
+  </div>
+
+  <div class="card">
+    <h2>3. Escolha a borda</h2>
+    <select id="borda" onchange="atualizar()"></select>
+  </div>
+
+  <div class="card" id="pizzaWrap">
+    <svg id="pizza" viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg"></svg>
+    <div class="preco" id="precoPizza">R$ 0,00</div>
+    <div style="margin-top:12px">
+      <h2 style="font-size:16px">🥤 Quer uma bebida?</h2>
+      <select id="bebida" onchange="atualizar()"></select>
+    </div>
+    <button class="btn" style="margin-top:12px" onclick="adicionar()">Adicionar à sacola 🛵</button>  </div>
+</main>
+
+<div class="modal" id="modal" onclick="if(event.target===this)fecharCarrinho()">
+  <div class="box">
+    <button class="fechar" onclick="fecharCarrinho()">✕</button>
+    <h2>Sua sacola 🛍️</h2>
+    <div id="itens"></div>
+    <div class="total" id="totalCarrinho"></div>
+    <button class="btn" style="margin-top:12px" onclick="abrirCheckout()">Continuar para entrega 🛵</button>
+    <button class="btn btn-sec" onclick="fecharCarrinho()">Continuar escolhendo</button>
+  </div>
+</div>
+
+<div class="modal" id="checkout" onclick="if(event.target===this)fecharCheckout()">
+  <div class="box">
+    <button class="fechar" onclick="fecharCheckout()">✕</button>
+    <h2>Seus dados 📝</h2>
+    <form id="formPedido" onsubmit="return false">
+      <label class="label" for="nome">Nome completo</label>
+      <input class="campo" id="nome" name="nome" required placeholder="Ex: Maria Silva">
+
+      <label class="label" for="whats">WhatsApp (com DDD)</label>
+      <input class="campo" id="whats" name="whatsapp" type="tel" required placeholder="(61) 99999-9999">
+
+      <label class="label" for="rua">Rua / Avenida</label>
+      <input class="campo" id="rua" name="rua" required placeholder="Ex: Rua das Flores">
+
+      <div class="linha">
+        <div>
+          <label class="label" for="numero">Número</label>
+          <input class="campo" id="numero" name="numero" required>
+        </div>
+        <div>
+          <label class="label" for="bairro">Bairro</label>
+          <input class="campo" id="bairro" name="bairro" required>
+        </div>
+      </div>
+
+      <label class="label" for="comp">Complemento (opcional)</label>
+      <input class="campo" id="comp" name="complemento" placeholder="Apto, bloco, casa, referência">
+
+      <label class="label" for="pagamento">Forma de pagamento</label>
+      <select class="campo" id="pagamento" name="pagamento" onchange="mostrarTroco()" required>
+        <option value="pix">Pix</option>
+        <option value="cartao">Cartão na entrega</option>
+        <option value="dinheiro">Dinheiro</option>
+      </select>
+
+      <div id="trocoBox" style="display:none">
+        <label class="label" for="troco">Troco para quanto?</label>
+        <input class="campo" id="troco" name="troco" placeholder="Ex: R$ 100,00">
+      </div>
+
+      <label class="label" for="obs">Observações (opcional)</label>
+      <textarea class="campo" id="obs" name="observacoes" rows="2" placeholder="Ex: sem cebola, campainha quebrada"></textarea>
+
+      <div class="total" id="totalCheckout"></div>
+      <button class="btn" style="margin-top:12px" type="button" onclick="confirmarPedido()">Confirmar pedido 🎉</button>
+      <button class="btn btn-sec" type="button" onclick="fecharCheckout()">Voltar</button>
+    </form>
+  </div>
+</div>
+
+<div class="modal" id="sucesso" style="background:rgba(0,0,0,.25)">
+  <canvas id="fogos" style="position:fixed;inset:0;width:100%;height:100%;pointer-events:none"></canvas>
+  <div class="box" style="text-align:center;position:relative;z-index:2">
+    <div style="font-size:64px">🎉</div>
+    <h2 style="font-size:26px">Pedido confirmado!</h2>
+    <p style="font-size:15px">Toque no botão abaixo para enviar o pedido pelo WhatsApp da pizzaria.</p>
+    <a class="btn" id="linkWhats" href="#" target="_blank" rel="noopener" style="display:block;text-decoration:none;box-sizing:border-box;line-height:20px;padding-top:16px">Enviar pedido no WhatsApp 📲</a>
+    <button class="btn btn-sec" onclick="fecharSucesso()">Fazer outro pedido 🍕</button>
+  </div>
+</div>
+
+<script>
+const SABORES = [
+  {id:'calabresa',  nome:'Calabresa Maluca',           cor:'#c44536', extra:0,  emoji:'🌶️'},
+  {id:'margherita', nome:'Margherita Sorridente',      cor:'#e8453c', extra:0,  emoji:'🍅'},
+  {id:'queijos',    nome:'Quatro Queijos Dançarinos',  cor:'#ffffff', extra:8,  emoji:'🧀'},
+  {id:'frango',     nome:'Frango Saltitante',          cor:'#e08a1e', extra:6,  emoji:'🍗'},
+  {id:'banana',     nome:'Banana Maluquinha',          cor:'#7ed957', extra:4,  emoji:'🍌'},
+  {id:'chocolate',  nome:'Chocolate Surpresa',         cor:'#6b3e26', extra:10, emoji:'🍫'}
+];
+const TAMANHOS = [
+  {id:'p', nome:'Pequena (4 fatias) - R$ 29', fatias:4, preco:29},
+  {id:'m', nome:'Média (6 fatias) - R$ 39',   fatias:6, preco:39},
+  {id:'g', nome:'Grande (8 fatias) - R$ 49',  fatias:8, preco:49}
+];
+const BORDAS = [
+  {id:'nenhuma',   nome:'Borda tradicional (grátis)', extra:0,  cor:'#c98a2b'},
+  {id:'catupiry',  nome:'Borda de Catupiry (+R$ 8)',  extra:8,  cor:'#fffbe6'},
+  {id:'cheddar',   nome:'Borda de Cheddar (+R$ 10)',  extra:10, cor:'#ff9f1c'},
+  {id:'chocolate', nome:'Borda de Chocolate (+R$ 9)', extra:9,  cor:'#5a2e12'}
+];
+
+// ====== CONFIGURAÇÃO DA LOJA: troque aqui quando mudar de cliente ======
+const CONFIG = {
+  nomeLoja: 'Pizza Sorriso',
+  // WhatsApp que recebe os pedidos: código do país (55) + DDD + número, sem espaços
+  whatsappDono: '5561984830314',
+  // Endereço do servidor no Render, sem barra no final. Ex: 'https://pizza-sorriso.onrender.com'
+  servidorPedidos: ''
+};
+// =======================================================================
+
+const BEBIDAS = [
+  {id:'nenhuma', nome:'Sem bebida', preco:0},
+  {id:'refri',   nome:'Refrigerante lata 350ml (+R$ 6)', preco:6},
+  {id:'suco',    nome:'Suco natural 300ml (+R$ 8)',      preco:8},
+  {id:'agua',    nome:'Água mineral 500ml (+R$ 4)',      preco:4},
+  {id:'cerveja', nome:'Cerveja long neck (+R$ 9)',       preco:9}
+];
+
+let tam = TAMANHOS[1];
+let fatias = [];
+let saborAtual = SABORES[0];
+let carrinho = [];
+
+function init(){
+  const selT = document.getElementById('tamanho');
+  TAMANHOS.forEach((t,i)=> selT.add(new Option(t.nome, i)));
+  selT.value = 1;
+  const selB = document.getElementById('borda');
+  BORDAS.forEach((b,i)=> selB.add(new Option(b.nome, i)));
+  const selBe = document.getElementById('bebida');
+  BEBIDAS.forEach((b,i)=> selBe.add(new Option(b.nome, i)));
+  renderSabores();
+  resetFatias();
+  desenhar();
+  atualizar();
+}
+
+function resetFatias(){ fatias = Array(tam.fatias).fill(null); }
+
+function mudarTamanho(){
+  tam = TAMANHOS[+document.getElementById('tamanho').value];
+  resetFatias();
+  desenhar();
+  atualizar();
+}
+
+function renderSabores(){
+  const box = document.getElementById('sabores');
+  box.innerHTML = '';
+  SABORES.forEach(s=>{
+    const b = document.createElement('button');
+    b.className = 'chip' + (s===saborAtual?' on':'');
+    b.textContent = s.emoji + ' ' + s.nome;
+    b.onclick = ()=>{ saborAtual = s; renderSabores(); };
+    box.appendChild(b);
+  });
+}
+
+function caminhoFatia(i, n, r){
+  const a0 = -Math.PI/2 + (2*Math.PI*i)/n;
+  const a1 = -Math.PI/2 + (2*Math.PI*(i+1))/n;
+  const c = 150;
+  const x0 = c + r*Math.cos(a0), y0 = c + r*Math.sin(a0);
+  const x1 = c + r*Math.cos(a1), y1 = c + r*Math.sin(a1);
+  const large = (a1-a0) > Math.PI ? 1 : 0;
+  return `M${c},${c} L${x0},${y0} A${r},${r} 0 ${large} 1 ${x1},${y1} Z`;
+}
+
+function desenhar(){
+  const svg = document.getElementById('pizza');
+  const borda = BORDAS[+document.getElementById('borda').value];
+  const n = tam.fatias;
+  let html = '';
+  html += `<circle cx="150" cy="150" r="140" fill="${borda.cor}" stroke="#8a5a1a" stroke-width="4"/>`;
+  for(let i=0;i<n;i++){
+    const s = fatias[i] ? SABORES.find(x=>x.id===fatias[i]) : null;
+    const cor = s ? s.cor : '#8a5a2b';
+    html += `<path class="slice" data-i="${i}" d="${caminhoFatia(i,n,118)}" fill="${cor}" stroke="#3b2a00" stroke-width="3" onclick="pintar(${i})"/>`;
+    if(s){
+      const a = -Math.PI/2 + (2*Math.PI*(i+0.5))/n;
+      const x = 150 + 70*Math.cos(a), y = 150 + 70*Math.sin(a);
+      html += `<text x="${x}" y="${y+8}" font-size="26" text-anchor="middle" pointer-events="none">${s.emoji}</text>`;
+    }
+  }
+  html += `<g class="centro" onclick="pintarTudo()" style="cursor:pointer">
+    <circle cx="150" cy="150" r="22" fill="${saborAtual.cor}" stroke="#7a4a10" stroke-width="3"/>
+    <text x="150" y="158" font-size="22" text-anchor="middle" pointer-events="none">${saborAtual.emoji}</text>
+  </g>`;
+  svg.innerHTML = html;
+}
+
+function pintarTudo(){
+  const emUso = sabores_em_uso();
+  const jaTem = emUso.some(s=>s.id===saborAtual.id);
+  if(!jaTem && emUso.length >= 2){
+    alert('Opa! Só dá para escolher até 2 sabores por pizza 😅');
+    return;
+  }
+  fatias = fatias.map(()=>saborAtual.id);
+  const svg = document.getElementById('pizza');
+  svg.classList.remove('pula'); void svg.offsetWidth; svg.classList.add('pula');
+  atualizar();
+}
+
+function sabores_em_uso(){
+  return [...new Set(fatias.filter(Boolean))].map(id=>SABORES.find(s=>s.id===id));
+}
+
+function pintar(i){
+  if(fatias[i] === saborAtual.id){
+    fatias[i] = null;
+    atualizar();
+    return;
+  }
+  const emUso = sabores_em_uso();
+  const jaTem = emUso.some(s=>s.id===saborAtual.id);
+  if(!jaTem && emUso.length >= 2){
+    alert('Opa! Só dá para escolher até 2 sabores por pizza 😅');
+    return;
+  }
+  fatias[i] = saborAtual.id;
+  const svg = document.getElementById('pizza');
+  svg.classList.remove('pula'); void svg.offsetWidth; svg.classList.add('pula');
+  desenhar();
+  atualizar();
+}
+
+function calcularPreco(){
+  const usados = sabores_em_uso();
+  const extraSabor = usados.length ? Math.max(...usados.map(s=>s.extra)) : 0;
+  const borda = BORDAS[+document.getElementById('borda').value];
+  const bebida = BEBIDAS[+document.getElementById('bebida').value];
+  return tam.preco + extraSabor + borda.extra + bebida.preco;
+}
+
+function atualizar(){
+  desenhar();
+  document.getElementById('precoPizza').textContent = 'R$ ' + calcularPreco().toFixed(2).replace('.',',');
+}
+
+function adicionar(){
+  if(fatias.some(f=>f===null)){
+    alert('Pinte todas as fatias da pizza primeiro 🍕');
+    return;
+  }
+  const borda = BORDAS[+document.getElementById('borda').value];
+  const usados = sabores_em_uso();
+  carrinho.push({
+    tamanho: tam.nome.split(' - ')[0],
+    sabores: usados.map(s=>s.nome).join(' + '),
+    borda: borda.nome.split(' (')[0],
+    bebida: BEBIDAS[+document.getElementById('bebida').value].nome.split(' (')[0],
+    preco: calcularPreco()
+  });
+  atualizarQtd();
+  resetFatias();
+  atualizar();
+  alert('Pizza na sacola! 🎉 Quer montar outra?');
+}
+
+function atualizarQtd(){
+  document.getElementById('qtd').textContent = carrinho.length;
+}
+
+function abrirCarrinho(){
+  const itens = document.getElementById('itens');
+  if(!carrinho.length){
+    itens.innerHTML = '<p class="vazio">Sua sacola está vazia 🥺<br>Monte uma pizza e adicione aqui!</p>';
+    document.getElementById('totalCarrinho').textContent = '';
+  } else {
+    let total = 0;
+    itens.innerHTML = carrinho.map((it,i)=>{
+      total += it.preco;
+      return `<div class="item"><div><b>${it.tamanho}</b><br>${it.sabores}<br><small>Borda: ${it.borda}</small><br><small>Bebida: ${it.bebida}</small></div>
+        <div><b>R$ ${it.preco.toFixed(2).replace('.',',')}</b><br><button onclick="remover(${i})" style="border:0;background:none;color:#c00;cursor:pointer">remover</button></div></div>`;
+    }).join('');
+    document.getElementById('totalCarrinho').textContent = 'Total: R$ ' + total.toFixed(2).replace('.',',');
+  }
+  document.getElementById('modal').classList.add('aberto');
+}
+
+function remover(i){
+  carrinho.splice(i,1);
+  atualizarQtd();
+  abrirCarrinho();
+}
+
+function fecharCarrinho(){
+  document.getElementById('modal').classList.remove('aberto');
+}
+
+let fogosAnim = null;
+
+async function enviarParaServidor(mensagem){
+  abrirSucesso();
+  if(!CONFIG.servidorPedidos) return;
+  try{
+    const r = await fetch(CONFIG.servidorPedidos + '/pedido', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({mensagem})
+    });
+    if(!r.ok) throw new Error('status ' + r.status);
+  }catch(e){
+    alert('Não conseguimos enviar o pedido automaticamente. Toque em "Enviar pedido no WhatsApp" para mandar pelo WhatsApp.');
+  }
+}
+
+function abrirSucesso(){
+  document.getElementById('sucesso').classList.add('aberto');
+  iniciarFogos();
+}
+
+function fecharSucesso(){
+  document.getElementById('sucesso').classList.remove('aberto');
+  cancelAnimationFrame(fogosAnim);
+}
+
+function iniciarFogos(){
+  const c = document.getElementById('fogos');
+  c.width = innerWidth;
+  c.height = innerHeight;
+  const ctx = c.getContext('2d');
+  const cores = ['#FFD60A','#ff4d4d','#ffffff','#7ed957','#ff9f1c'];
+  let parts = [];
+  let ultimo = 0;
+
+  function explodir(){
+    const x = Math.random() * c.width;
+    const y = 60 + Math.random() * c.height * 0.5;
+    const cor = cores[Math.floor(Math.random() * cores.length)];
+    for(let i = 0; i < 40; i++){
+      const a = Math.random() * Math.PI * 2;
+      const v = Math.random() * 5 + 2;
+      parts.push({x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v, vida: 60, cor});
+    }
+  }
+
+  function quadro(t){
+    if(t - ultimo > 500){ explodir(); ultimo = t; }
+    ctx.clearRect(0, 0, c.width, c.height);
+    parts.forEach(p=>{
+      p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.vida--;
+      ctx.globalAlpha = Math.max(p.vida / 60, 0);
+      ctx.fillStyle = p.cor;
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+    parts = parts.filter(p => p.vida > 0);
+    fogosAnim = requestAnimationFrame(quadro);
+  }
+
+  fogosAnim = requestAnimationFrame(quadro);
+}
+
+function abrirCheckout(){
+  if(!carrinho.length){ alert('Sua sacola está vazia 🍕'); return; }
+  fecharCarrinho();
+  const total = carrinho.reduce((s,i)=>s+i.preco,0);
+  document.getElementById('totalCheckout').textContent = 'Total: R$ ' + total.toFixed(2).replace('.',',');
+  document.getElementById('checkout').classList.add('aberto');
+}
+
+function fecharCheckout(){
+  document.getElementById('checkout').classList.remove('aberto');
+}
+
+function mostrarTroco(){
+  const dinheiro = document.getElementById('pagamento').value === 'dinheiro';
+  document.getElementById('trocoBox').style.display = dinheiro ? 'block' : 'none';
+}
+
+function confirmarPedido(){
+  const form = document.getElementById('formPedido');
+  if(!form.reportValidity()) return;
+  const d = Object.fromEntries(new FormData(form));
+  const total = carrinho.reduce((s,i)=>s+i.preco,0);
+  const pgto = {pix:'Pix', cartao:'Cartão na entrega', dinheiro:'Dinheiro'}[d.pagamento];
+  const itens = carrinho.map((it,i)=>
+    (i+1) + '. ' + it.tamanho + ' - ' + it.sabores + ' (borda: ' + it.borda + ')' +
+    (it.bebida !== 'Sem bebida' ? ' + ' + it.bebida : '') +
+    ' - R$ ' + it.preco.toFixed(2).replace('.',',')
+  ).join('\n');
+
+  const mensagem =
+    '🍕 *NOVO PEDIDO - Pizza Sorriso*\n\n' +
+    itens + '\n\n' +
+    '*Total:* R$ ' + total.toFixed(2).replace('.',',') + '\n' +
+    '*Pagamento:* ' + pgto + (d.troco ? ' (troco para ' + d.troco + ')' : '') + '\n\n' +
+    '*Cliente:* ' + d.nome + '\n' +
+    '*WhatsApp:* ' + d.whatsapp + '\n' +
+    '*Endereço:* ' + d.rua + ', ' + d.numero + ' - ' + d.bairro + (d.complemento ? ' (' + d.complemento + ')' : '') +
+    (d.observacoes ? '\n*Obs:* ' + d.observacoes : '');
+
+  document.getElementById('linkWhats').href =
+    'https://wa.me/' + CONFIG.whatsappDono + '?text=' + encodeURIComponent(mensagem);
+  enviarParaServidor(mensagem);
+  carrinho = [];
+  atualizarQtd();
+  form.reset();
+  mostrarTroco();
+  fecharCheckout();
+}
+
+init();
+</script>
+</body>
+</html>
